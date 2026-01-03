@@ -38,9 +38,20 @@ async def query_model(
                 headers=headers,
                 json=payload
             )
-            response.raise_for_status()
+
+            # Log response for debugging
+            if response.status_code != 200:
+                print(f"OpenRouter error for {model}: Status {response.status_code}")
+                print(f"Response body: {response.text}")
+                return None
 
             data = response.json()
+
+            # Check for API-level errors
+            if 'error' in data:
+                print(f"OpenRouter API error for {model}: {data['error']}")
+                return None
+
             message = data['choices'][0]['message']
 
             return {
