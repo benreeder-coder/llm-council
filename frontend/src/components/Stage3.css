@@ -1,25 +1,107 @@
 .stage3 {
-  background: #f0fff0;
-  border-color: #c8e6c8;
+  background: linear-gradient(135deg, var(--orange-subtle) 0%, var(--bg-surface) 100%);
+  border-color: var(--orange-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.stage3::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange-primary), var(--orange-secondary), var(--orange-primary));
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.stage3::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at top, var(--orange-subtle) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.stage3 .stage-title {
+  color: var(--orange-primary);
+  position: relative;
+  z-index: 1;
+}
+
+.stage3 .stage-title::before {
+  content: '03';
+  background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-secondary) 100%);
+  border: none;
+  color: var(--bg-primary);
+  box-shadow: var(--glow-orange);
 }
 
 .final-response {
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 6px;
-  border: 1px solid #c8e6c8;
+  background: var(--bg-secondary);
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--orange-border);
+  position: relative;
+  z-index: 1;
+  animation: fade-in 0.5s ease-out;
 }
 
 .chairman-label {
-  color: #2d8a2d;
-  font-size: 12px;
-  font-family: monospace;
-  margin-bottom: 12px;
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 600;
+  color: var(--orange-primary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--orange-subtle);
+  border-radius: 8px;
+  border: 1px solid var(--orange-border);
+  width: fit-content;
+}
+
+.chairman-label::before {
+  content: '👑';
+  font-size: 14px;
 }
 
 .final-text {
-  color: #333;
-  line-height: 1.7;
-  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.final-text .markdown-content {
+  padding: 0;
+}
+
+.final-text .markdown-content p {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+/* Completion animation */
+@keyframes verdict-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stage3 {
+  animation: verdict-reveal 0.6s ease-out;
 }

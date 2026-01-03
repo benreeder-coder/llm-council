@@ -1,12 +1,19 @@
 .stage2 {
-  background: #fafafa;
+  background: var(--bg-surface);
+}
+
+.stage2 .stage-title::before {
+  content: '02';
 }
 
 .stage2 h4 {
-  margin: 20px 0 8px 0;
-  color: #333;
-  font-size: 14px;
+  margin: 24px 0 12px 0;
+  font-family: var(--font-display);
+  font-size: 12px;
   font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .stage2 h4:first-of-type {
@@ -14,140 +21,234 @@
 }
 
 .stage-description {
-  margin: 0 0 12px 0;
-  color: #666;
-  font-size: 13px;
-  line-height: 1.5;
+  margin: 0 0 16px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .aggregate-rankings {
-  background: #f0f7ff;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 2px solid #d0e7ff;
+  background: linear-gradient(135deg, var(--orange-subtle) 0%, rgba(255, 107, 0, 0.05) 100%);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid var(--orange-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.aggregate-rankings::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--orange-primary), var(--orange-secondary));
 }
 
 .aggregate-rankings h4 {
   margin: 0 0 12px 0;
-  color: #2a7ae2;
-  font-size: 15px;
+  color: var(--orange-primary);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aggregate-rankings h4::before {
+  content: '🏆';
+  font-size: 16px;
 }
 
 .aggregate-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .aggregate-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
-  background: #ffffff;
-  border-radius: 6px;
-  border: 1px solid #d0e7ff;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-normal);
+  animation: slide-in-left 0.3s ease-out;
+}
+
+.aggregate-item:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.aggregate-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.aggregate-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.aggregate-item:hover {
+  border-color: var(--orange-border);
+  background: var(--bg-surface-hover);
+}
+
+.aggregate-item:first-child {
+  border-color: var(--orange-border);
+  background: linear-gradient(135deg, var(--orange-subtle) 0%, var(--bg-secondary) 100%);
+}
+
+.aggregate-item:first-child .rank-position {
+  color: var(--orange-primary);
+  text-shadow: 0 0 10px var(--orange-glow);
 }
 
 .rank-position {
-  color: #2a7ae2;
+  font-family: var(--font-display);
+  color: var(--text-muted);
   font-weight: 700;
-  font-size: 16px;
-  min-width: 35px;
+  font-size: 18px;
+  min-width: 40px;
 }
 
 .rank-model {
   flex: 1;
-  color: #333;
-  font-family: monospace;
-  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 500;
 }
 
 .rank-score {
-  color: #666;
-  font-size: 13px;
-  font-family: monospace;
+  color: var(--orange-secondary);
+  font-size: 12px;
+  font-family: var(--font-body);
+  padding: 4px 10px;
+  background: var(--orange-subtle);
+  border-radius: 4px;
+  border: 1px solid var(--orange-border);
+}
+
+.rank-count {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stage2 .tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .stage2 .tab {
-  padding: 8px 16px;
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px 6px 0 0;
-  color: #666;
+  padding: 12px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.stage2 .tab::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--orange-primary);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
 }
 
 .stage2 .tab:hover {
-  background: #f0f0f0;
-  color: #333;
-  border-color: #4a90e2;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-orange);
+}
+
+.stage2 .tab:hover::before {
+  transform: scaleX(0.5);
 }
 
 .stage2 .tab.active {
-  background: #ffffff;
-  color: #4a90e2;
-  border-color: #4a90e2;
-  border-bottom-color: #ffffff;
+  background: var(--orange-subtle);
+  color: var(--orange-primary);
+  border-color: var(--orange-border);
   font-weight: 600;
 }
 
+.stage2 .tab.active::before {
+  transform: scaleX(1);
+}
+
 .stage2 .tab-content {
-  background: #ffffff;
-  padding: 16px;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 24px;
+  animation: fade-in 0.3s ease-out;
 }
 
 .ranking-model {
-  color: #888;
-  font-size: 12px;
-  font-family: monospace;
-  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-body);
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  display: inline-block;
+  border: 1px solid var(--border-subtle);
 }
 
 .ranking-content {
-  color: #333;
-  line-height: 1.6;
-  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 13px;
 }
 
 .parsed-ranking {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 2px solid #e0e0e0;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .parsed-ranking strong {
-  color: #2a7ae2;
-  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--orange-primary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .parsed-ranking ol {
-  margin: 8px 0 0 0;
+  margin: 12px 0 0 0;
   padding-left: 24px;
-  color: #333;
+  color: var(--text-secondary);
 }
 
 .parsed-ranking li {
-  margin: 4px 0;
-  font-family: monospace;
-  font-size: 13px;
+  margin: 8px 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 6px 0;
 }
 
-.rank-count {
-  color: #999;
-  font-size: 12px;
+.parsed-ranking li::marker {
+  color: var(--orange-primary);
+  font-weight: 600;
 }
