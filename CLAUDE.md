@@ -2,150 +2,199 @@
 
 This file contains technical details, architectural decisions, and important implementation notes for future development sessions.
 
+## Quick Start - Resuming Development
+
+### Local Development
+```bash
+# Backend (from project root)
+uv run python -m backend.main
+
+# Frontend (in separate terminal)
+cd frontend && npm run dev
+```
+Then open http://localhost:5174 (or 5173 if available)
+
+### Deploying Changes
+```bash
+# Commit and push to GitHub
+git add -A && git commit -m "Your message" && git push
+
+# Redeploy frontend to Vercel
+cd frontend && vercel --prod --yes
+
+# Backend auto-deploys on Railway when you push to GitHub
+```
+
+## Deployment URLs
+
+| Service | URL | Platform |
+|---------|-----|----------|
+| **Frontend** | https://frontend-rfe31sw23-ben-reeders-projects.vercel.app | Vercel |
+| **Backend API** | https://llm-council-production-a448.up.railway.app | Railway |
+| **GitHub Repo** | https://github.com/benreeder-coder/llm-council | GitHub |
+
+## Environment Variables
+
+### Local Development
+Create `.env` in project root:
+```
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+```
+
+### Production (Railway)
+Set in Railway dashboard: Project → Service → **Variables** tab
+- `OPENROUTER_API_KEY` - Your OpenRouter API key
+
+**IMPORTANT**: The `.env` file is gitignored and NOT deployed. Railway needs the variable set in its dashboard.
+
+## Current Model Configuration
+
+Edit `backend/config.py` to change models:
+
+```python
+COUNCIL_MODELS = [
+    "openai/gpt-5.2",
+    "google/gemini-3-pro-preview",
+    "anthropic/claude-opus-4.5",
+]
+
+CHAIRMAN_MODEL = "anthropic/claude-opus-4.5"
+```
+
+### Model Costs (OpenRouter)
+- **Claude Opus 4.5**: $3/M input, $15/M output (expensive)
+- **GPT-5.2**: ~$2.50/M input, $10/M output
+- **Gemini 3 Pro**: ~$1.25/M input, $5/M output
+- **Gemini 3 Flash**: Much cheaper, good for chairman if budget-conscious
+
+Check current prices: https://openrouter.ai/models
+
 ## Project Overview
 
 LLM Council is a 3-stage deliberation system where multiple LLMs collaboratively answer user questions. The key innovation is anonymized peer review in Stage 2, preventing models from playing favorites.
+
+### The 3 Stages
+1. **Stage 1**: All council models answer the question independently (parallel)
+2. **Stage 2**: Each model ranks the others' responses (anonymized as Response A, B, C)
+3. **Stage 3**: Chairman synthesizes all responses + rankings into final answer
 
 ## Architecture
 
 ### Backend Structure (`backend/`)
 
-**`config.py`**
-- Contains `COUNCIL_MODELS` (list of OpenRouter model identifiers)
-- Contains `CHAIRMAN_MODEL` (model that synthesizes final answer)
-- Uses environment variable `OPENROUTER_API_KEY` from `.env`
-- Backend runs on **port 8001** (NOT 8000 - user had another app on 8000)
+| File | Purpose |
+|------|---------|
+| `config.py` | Model configuration, API keys, constants |
+| `openrouter.py` | OpenRouter API client with error handling |
+| `council.py` | Core 3-stage logic, ranking parser |
+| `storage.py` | JSON conversation persistence |
+| `main.py` | FastAPI routes, CORS config |
 
-**`openrouter.py`**
-- `query_model()`: Single async model query
-- `query_models_parallel()`: Parallel queries using `asyncio.gather()`
-- Returns dict with 'content' and optional 'reasoning_details'
-- Graceful degradation: returns None on failure, continues with successful responses
-
-**`council.py`** - The Core Logic
-- `stage1_collect_responses()`: Parallel queries to all council models
-- `stage2_collect_rankings()`:
-  - Anonymizes responses as "Response A, B, C, etc."
-  - Creates `label_to_model` mapping for de-anonymization
-  - Prompts models to evaluate and rank (with strict format requirements)
-  - Returns tuple: (rankings_list, label_to_model_dict)
-  - Each ranking includes both raw text and `parsed_ranking` list
-- `stage3_synthesize_final()`: Chairman synthesizes from all responses + rankings
-- `parse_ranking_from_text()`: Extracts "FINAL RANKING:" section, handles both numbered lists and plain format
-- `calculate_aggregate_rankings()`: Computes average rank position across all peer evaluations
-
-**`storage.py`**
-- JSON-based conversation storage in `data/conversations/`
-- Each conversation: `{id, created_at, messages[]}`
-- Assistant messages contain: `{role, stage1, stage2, stage3}`
-- Note: metadata (label_to_model, aggregate_rankings) is NOT persisted to storage, only returned via API
-
-**`main.py`**
-- FastAPI app with CORS enabled for localhost:5173 and localhost:3000
-- POST `/api/conversations/{id}/message` returns metadata in addition to stages
-- Metadata includes: label_to_model mapping and aggregate_rankings
+**Key Backend Notes:**
+- Backend runs on **port 8001**
+- CORS allows all origins (`"*"`) for deployment flexibility
+- Chairman has 180s timeout (longer for synthesis)
+- Errors are logged with full response body for debugging
 
 ### Frontend Structure (`frontend/src/`)
 
-**`App.jsx`**
-- Main orchestration: manages conversations list and current conversation
-- Handles message sending and metadata storage
-- Important: metadata is stored in the UI state for display but not persisted to backend JSON
+| File | Purpose |
+|------|---------|
+| `App.jsx` | Main app, conversation state management |
+| `api.js` | Backend API client (uses `VITE_API_URL` env var) |
+| `index.css` | Global styles, CSS variables, animations |
+| `components/ChatInterface.jsx` | Chat UI, input form, loading states |
+| `components/Stage1.jsx` | Individual response tabs |
+| `components/Stage2.jsx` | Rankings, aggregate scores |
+| `components/Stage3.jsx` | Chairman's final answer |
 
-**`components/ChatInterface.jsx`**
-- Multiline textarea (3 rows, resizable)
-- Enter to send, Shift+Enter for new line
-- User messages wrapped in markdown-content class for padding
+## Design System - "Neural Command Center"
 
-**`components/Stage1.jsx`**
-- Tab view of individual model responses
-- ReactMarkdown rendering with markdown-content wrapper
+The frontend uses a futuristic dark theme with orange accents.
 
-**`components/Stage2.jsx`**
-- **Critical Feature**: Tab view showing RAW evaluation text from each model
-- De-anonymization happens CLIENT-SIDE for display (models receive anonymous labels)
-- Shows "Extracted Ranking" below each evaluation so users can validate parsing
-- Aggregate rankings shown with average position and vote count
-- Explanatory text clarifies that boldface model names are for readability only
-
-**`components/Stage3.jsx`**
-- Final synthesized answer from chairman
-- Green-tinted background (#f0fff0) to highlight conclusion
-
-**Styling (`*.css`)**
-- Light mode theme (not dark mode)
-- Primary color: #4a90e2 (blue)
-- Global markdown styling in `index.css` with `.markdown-content` class
-- 12px padding on all markdown content to prevent cluttered appearance
-
-## Key Design Decisions
-
-### Stage 2 Prompt Format
-The Stage 2 prompt is very specific to ensure parseable output:
-```
-1. Evaluate each response individually first
-2. Provide "FINAL RANKING:" header
-3. Numbered list format: "1. Response C", "2. Response A", etc.
-4. No additional text after ranking section
+### CSS Variables (in `index.css`)
+```css
+--bg-primary: #050508;          /* Near-black background */
+--bg-secondary: #0a0a0f;        /* Slightly lighter */
+--orange-primary: #FF6B00;      /* Main accent */
+--orange-secondary: #FF8C00;    /* Warm orange */
+--orange-glow: rgba(255, 107, 0, 0.4);
+--text-primary: #ffffff;
+--text-secondary: #b0b0b0;
+--font-display: 'Orbitron', sans-serif;  /* Headers */
+--font-body: 'JetBrains Mono', monospace; /* Body text */
 ```
 
-This strict format allows reliable parsing while still getting thoughtful evaluations.
+### Key Visual Features
+- Dark background with subtle orange grid pattern
+- Glassmorphism panels with transparency
+- Glowing orange accents on hover/focus
+- Smooth animations: fade-in, slide-in, pulse, scan-line
+- Stage badges (01, 02, 03) for each phase
+- Trophy icon for rankings, crown for chairman
 
-### De-anonymization Strategy
-- Models receive: "Response A", "Response B", etc.
-- Backend creates mapping: `{"Response A": "openai/gpt-5.1", ...}`
-- Frontend displays model names in **bold** for readability
-- Users see explanation that original evaluation used anonymous labels
-- This prevents bias while maintaining transparency
+### Changing the Theme
+1. Edit CSS variables in `frontend/src/index.css`
+2. Component-specific styles in `frontend/src/components/*.css`
+3. Commit, push, and redeploy to Vercel
 
-### Error Handling Philosophy
-- Continue with successful responses if some models fail (graceful degradation)
-- Never fail the entire request due to single model failure
-- Log errors but don't expose to user unless all models fail
+## API Endpoints
 
-### UI/UX Transparency
-- All raw outputs are inspectable via tabs
-- Parsed rankings shown below raw text for validation
-- Users can verify system's interpretation of model outputs
-- This builds trust and allows debugging of edge cases
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/conversations` | List all conversations |
+| POST | `/api/conversations` | Create new conversation |
+| GET | `/api/conversations/{id}` | Get conversation details |
+| POST | `/api/conversations/{id}/message` | Send message (batch) |
+| POST | `/api/conversations/{id}/message/stream` | Send message (streaming) |
 
-## Important Implementation Details
+## Common Tasks
 
-### Relative Imports
-All backend modules use relative imports (e.g., `from .config import ...`) not absolute imports. This is critical for Python's module system to work correctly when running as `python -m backend.main`.
+### Adding a New Model to the Council
+1. Find the model ID on https://openrouter.ai/models
+2. Edit `backend/config.py`:
+   ```python
+   COUNCIL_MODELS = [
+       "openai/gpt-5.2",
+       "your-new/model-id",  # Add here
+       ...
+   ]
+   ```
+3. Commit, push (Railway auto-deploys)
 
-### Port Configuration
-- Backend: 8001 (changed from 8000 to avoid conflict)
-- Frontend: 5173 (Vite default)
-- Update both `backend/main.py` and `frontend/src/api.js` if changing
+### Changing the Chairman
+Edit `backend/config.py`:
+```python
+CHAIRMAN_MODEL = "google/gemini-3-flash-preview"  # Cheaper option
+```
 
-### Markdown Rendering
-All ReactMarkdown components must be wrapped in `<div className="markdown-content">` for proper spacing. This class is defined globally in `index.css`.
+### Updating Frontend API URL
+For local dev, the frontend uses `http://localhost:8001`.
+For production, set in `frontend/.env.production`:
+```
+VITE_API_URL=https://llm-council-production-a448.up.railway.app
+```
 
-### Model Configuration
-Models are hardcoded in `backend/config.py`. Chairman can be same or different from council members. The current default is Gemini as chairman per user preference.
+## Troubleshooting
 
-## Common Gotchas
+### "Unable to generate final synthesis" Error
+- Check OpenRouter credits at https://openrouter.ai/credits
+- Check Railway logs: Project → Service → Deployments → View Logs
+- Verify `OPENROUTER_API_KEY` is set in Railway Variables
 
-1. **Module Import Errors**: Always run backend as `python -m backend.main` from project root, not from backend directory
-2. **CORS Issues**: Frontend must match allowed origins in `main.py` CORS middleware
-3. **Ranking Parse Failures**: If models don't follow format, fallback regex extracts any "Response X" patterns in order
-4. **Missing Metadata**: Metadata is ephemeral (not persisted), only available in API responses
+### 401 "No cookie auth credentials found"
+- API key not set in Railway
+- Go to Railway: Project → Service → Variables → Add `OPENROUTER_API_KEY`
 
-## Future Enhancement Ideas
+### CORS Errors
+- Backend CORS is set to `"*"` (all origins)
+- If issues persist, check `backend/main.py` CORS middleware
 
-- Configurable council/chairman via UI instead of config file
-- Streaming responses instead of batch loading
-- Export conversations to markdown/PDF
-- Model performance analytics over time
-- Custom ranking criteria (not just accuracy/insight)
-- Support for reasoning models (o1, etc.) with special handling
+### Models Timing Out
+- Increase timeout in `backend/openrouter.py` (default 120s)
+- Chairman has 180s timeout in `backend/council.py`
 
-## Testing Notes
-
-Use `test_openrouter.py` to verify API connectivity and test different model identifiers before adding to council. The script tests both streaming and non-streaming modes.
-
-## Data Flow Summary
+## Data Flow
 
 ```
 User Query
@@ -156,11 +205,49 @@ Stage 2: Anonymize → Parallel ranking queries → [evaluations + parsed rankin
     ↓
 Aggregate Rankings Calculation → [sorted by avg position]
     ↓
-Stage 3: Chairman synthesis with full context
+Stage 3: Chairman synthesis with full context (180s timeout)
     ↓
 Return: {stage1, stage2, stage3, metadata}
     ↓
 Frontend: Display with tabs + validation UI
 ```
 
-The entire flow is async/parallel where possible to minimize latency.
+## File Structure
+
+```
+llm-council/
+├── backend/
+│   ├── __init__.py
+│   ├── config.py          # Models, API key
+│   ├── council.py         # 3-stage logic
+│   ├── main.py            # FastAPI app
+│   ├── openrouter.py      # API client
+│   └── storage.py         # JSON storage
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── api.js         # API client
+│   │   ├── App.jsx        # Main app
+│   │   ├── App.css
+│   │   └── index.css      # Global styles, theme
+│   ├── .env.production    # Production API URL
+│   └── package.json
+├── .env                   # Local API key (gitignored)
+├── .gitignore
+├── CLAUDE.md              # This file
+├── Dockerfile             # Railway deployment
+├── pyproject.toml         # Python dependencies
+├── railway.json           # Railway config
+└── README.md
+```
+
+## Future Enhancement Ideas
+
+- [ ] Configurable council/chairman via UI
+- [ ] Streaming responses (show as they come in)
+- [ ] Export conversations to markdown/PDF
+- [ ] Model performance analytics
+- [ ] Custom ranking criteria
+- [ ] Cost tracking per query
+- [ ] User authentication
+- [ ] Multiple council presets
