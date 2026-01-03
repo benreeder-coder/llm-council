@@ -15,7 +15,10 @@
       "WebSearch",
       "Bash(uv run:*)",
       "Bash(npm run dev:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)"
     ]
   }
 }
